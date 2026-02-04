@@ -1,0 +1,1080 @@
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Send Email To A Group</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1e293b; min-height: 100vh; }
+ 
+    /* ── Header ── */
+    header { background: linear-gradient(135deg, #1e3a5f, #2c5282); color: white; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 18px; font-weight: 600; }
+    #userInfo { font-size: 11px; color: #bee3f8; }
+ 
+    /* ── Wizard progress bar ── */
+    .wizard-progress { background: #fff; padding: 20px 24px 16px; border-bottom: 1px solid #e2e8f0; }
+    .steps { display: flex; justify-content: center; gap: 0; max-width: 700px; margin: 0 auto; position: relative; }
+    .step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; z-index: 1; cursor: pointer; }
+    .step-circle { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; border: 3px solid #cbd5e1; background: #fff; color: #94a3b8; transition: all 0.3s; }
+    .step.active .step-circle { border-color: #3b82f6; background: #3b82f6; color: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.15); }
+    .step.done .step-circle { border-color: #22c55e; background: #22c55e; color: #fff; }
+    .step-label { margin-top: 6px; font-size: 11px; font-weight: 600; color: #94a3b8; text-align: center; transition: color 0.3s; }
+    .step.active .step-label { color: #3b82f6; }
+    .step.done .step-label { color: #22c55e; }
+    .step-line { position: absolute; top: 19px; left: calc(50% + 24px); right: calc(-50% + 24px); height: 3px; background: #e2e8f0; z-index: 0; }
+    .step:last-child .step-line { display: none; }
+    .step.done .step-line { background: #22c55e; }
+ 
+    /* ── Main content area ── */
+    .wizard-body { max-width: 760px; margin: 20px auto; padding: 0 16px; }
+    .card { background: #fff; border-radius: 12px; box-shadow: 0 1px 8px rgba(0,0,0,0.07); padding: 28px; margin-bottom: 16px; }
+    .card-title { font-size: 20px; font-weight: 700; color: #1e3a5f; margin-bottom: 4px; }
+    .card-subtitle { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+ 
+    /* ── Form elements ── */
+    label.field-label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .field-group { margin-bottom: 16px; }
+    input[type="text"], input[type="email"], select, textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 6px;
+      font-size: 14px; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+    textarea { resize: vertical; min-height: 160px; line-height: 1.5; }
+    select { cursor: pointer; background: #fff; }
+ 
+    /* ── Group type cards ── */
+    .group-type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .group-type-card {
+      border: 2px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; cursor: pointer;
+      transition: all 0.2s; display: flex; align-items: center; gap: 10px;
+    }
+    .group-type-card:hover { border-color: #93c5fd; background: #f8fafc; }
+    .group-type-card.selected { border-color: #3b82f6; background: #eff6ff; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+    .group-type-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .group-type-card .gtc-label { font-size: 13px; font-weight: 600; color: #334155; }
+    .group-type-card .gtc-desc { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+ 
+    /* ── Checkbox pills ── */
+    .checkbox-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .pill-check { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid #e2e8f0; border-radius: 20px; cursor: pointer; font-size: 13px; color: #475569; transition: all 0.2s; user-select: none; }
+    .pill-check:hover { border-color: #93c5fd; background: #f8fafc; }
+    .pill-check.checked { border-color: #3b82f6; background: #eff6ff; color: #1e40af; font-weight: 600; }
+    .pill-check input { display: none; }
+ 
+    /* ── Merge field bar ── */
+    .merge-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+    .merge-btn { padding: 4px 10px; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; font-size: 11px; color: #64748b; cursor: pointer; transition: all 0.15s; font-family: monospace; }
+    .merge-btn:hover { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+ 
+    /* ── Action buttons ── */
+    .btn-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; }
+    .btn { padding: 11px 28px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: #3b82f6; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+    .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+    .btn-secondary:hover:not(:disabled) { background: #e2e8f0; }
+    .btn-success { background: #22c55e; color: white; }
+    .btn-success:hover:not(:disabled) { background: #16a34a; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(34,197,94,0.3); }
+    .btn-warning { background: #f59e0b; color: white; }
+    .btn-warning:hover:not(:disabled) { background: #d97706; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover:not(:disabled) { background: #dc2626; }
+    .btn-sm { padding: 7px 16px; font-size: 12px; }
+ 
+    /* ── Filter section ── */
+    .filter-section { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .filter-section.hidden { display: none; }
+    .filter-title { font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+ 
+    /* ── Step panels ── */
+    .step-panel { display: none; }
+    .step-panel.active { display: block; }
+ 
+    /* ── Review section ── */
+    .review-table { width: 100%; border-collapse: collapse; }
+    .review-table td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: top; }
+    .review-table td:first-child { font-weight: 700; color: #475569; width: 160px; white-space: nowrap; }
+    .review-table td:last-child { color: #1e293b; }
+ 
+    /* ── Status / toast ── */
+    .toast { position: fixed; bottom: 20px; right: 20px; padding: 14px 20px; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: #22c55e; }
+    .toast.error { background: #ef4444; }
+    .toast.info { background: #3b82f6; }
+ 
+    /* ── Recipient stats ── */
+    .stats-row { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .stat-card { flex: 1; min-width: 120px; padding: 14px; border-radius: 8px; text-align: center; }
+    .stat-card .stat-num { font-size: 28px; font-weight: 800; }
+    .stat-card .stat-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+    .stat-total { background: #eff6ff; color: #1e40af; }
+    .stat-sent { background: #f0fdf4; color: #166534; }
+    .stat-pending { background: #fefce8; color: #854d0e; }
+    .stat-dupes { background: #fef2f2; color: #991b1b; }
+ 
+    /* ── Send progress ── */
+    .progress-bar { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin: 12px 0; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #22c55e); border-radius: 4px; transition: width 0.5s ease; width: 0; }
+ 
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .group-type-grid { grid-template-columns: 1fr; }
+      .btn-row { flex-direction: column; }
+      .stats-row { flex-direction: column; }
+      .card { padding: 20px; }
+    }
+ 
+    /* ── Existing email groups list ── */
+    .email-group-list { margin-bottom: 16px; }
+    .email-group-item {
+      display: flex; justify-content: space-between; align-items: center; padding: 10px 14px;
+      border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 6px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .email-group-item:hover { border-color: #93c5fd; background: #f8fafc; }
+    .email-group-item.selected { border-color: #3b82f6; background: #eff6ff; }
+    .email-group-item .egi-name { font-size: 13px; font-weight: 600; color: #334155; }
+    .email-group-item .egi-meta { font-size: 11px; color: #94a3b8; }
+ 
+    .or-divider { text-align: center; padding: 12px; font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+ 
+    /* ── Hidden ── */
+    .hidden { display: none !important; }
+ 
+    /* ── Loading spinner ── */
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+ 
+    .inline-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(59,130,246,0.2); border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  </style>
+</head>
+<body>
+ 
+  <header>
+    <h1>Send Email To A Group</h1>
+    <div id="userInfo"></div>
+  </header>
+ 
+  <!-- ── Wizard Progress ── -->
+  <div class="wizard-progress">
+    <div class="steps">
+      <div class="step active" onclick="goToStep(1)">
+        <div class="step-circle">1</div>
+        <div class="step-label">Recipients</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step" onclick="goToStep(2)">
+        <div class="step-circle">2</div>
+        <div class="step-label">Compose</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step" onclick="goToStep(3)">
+        <div class="step-circle">3</div>
+        <div class="step-label">Review</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step" onclick="goToStep(4)">
+        <div class="step-circle">4</div>
+        <div class="step-label">Send</div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="wizard-body">
+ 
+    <!-- ════════════════════════════════════════════════════ -->
+    <!--  STEP 1 : Choose Recipients                        -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="step-panel active" id="panel1">
+      <div class="card">
+        <div class="card-title">Who should receive this email?</div>
+        <div class="card-subtitle">Choose an existing email group or start a new one.</div>
+ 
+        <!-- Existing groups -->
+        <div class="field-group">
+          <label class="field-label">Existing Email Groups</label>
+          <div id="existingGroups" style="max-height:200px;overflow-y:auto;margin-bottom:8px;">
+            <div style="padding:12px;text-align:center;color:#94a3b8;font-size:13px;">
+              <span class="inline-spinner"></span> Loading groups...
+            </div>
+          </div>
+        </div>
+ 
+        <div class="or-divider">- or create new -</div>
+ 
+        <!-- Group Type selector -->
+        <div class="field-group">
+          <label class="field-label">Recipient Group Type</label>
+          <div class="group-type-grid">
+            <div class="group-type-card" data-type="All Parents" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#dbeafe;">&#128106;</div>
+              <div><div class="gtc-label">All Parents</div><div class="gtc-desc">Every parent household</div></div>
+            </div>
+            <div class="group-type-card" data-type="All Members" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#e0e7ff;">&#128101;</div>
+              <div><div class="gtc-label">All Members</div><div class="gtc-desc">Full membership list</div></div>
+            </div>
+            <div class="group-type-card" data-type="All Current Faculty" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#fef3c7;">&#127891;</div>
+              <div><div class="gtc-label">All Faculty</div><div class="gtc-desc">Current faculty members</div></div>
+            </div>
+            <div class="group-type-card" data-type="Selected Households" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#dcfce7;">&#127968;</div>
+              <div><div class="gtc-label">Selected Households</div><div class="gtc-desc">Filter by grade, class, bus</div></div>
+            </div>
+            <div class="group-type-card" data-type="Class Section Parents" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#fce7f3;">&#128218;</div>
+              <div><div class="gtc-label">Class Parents</div><div class="gtc-desc">Parents of a class section</div></div>
+            </div>
+            <div class="group-type-card" data-type="Selected Current Faculty" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#fff7ed;">&#128188;</div>
+              <div><div class="gtc-label">Selected Faculty</div><div class="gtc-desc">Filter by department</div></div>
+            </div>
+            <div class="group-type-card" data-type="Current Students" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#f0fdf4;">&#127891;</div>
+              <div><div class="gtc-label">Current Students</div><div class="gtc-desc">Student email addresses</div></div>
+            </div>
+            <div class="group-type-card" data-type="Selected Account Group" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#ede9fe;">&#128203;</div>
+              <div><div class="gtc-label">Account Group</div><div class="gtc-desc">Predefined account group</div></div>
+            </div>
+            <div class="group-type-card" data-type="Freeform List" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#e0f2fe;">&#128221;</div>
+              <div><div class="gtc-label">Freeform List</div><div class="gtc-desc">Custom mailing list</div></div>
+            </div>
+            <div class="group-type-card" data-type="Single User" onclick="selectGroupType(this)">
+              <div class="group-type-icon" style="background:#fef2f2;">&#128100;</div>
+              <div><div class="gtc-label">Single User</div><div class="gtc-desc">One specific recipient</div></div>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Dynamic filter sections (shown based on group type) -->
+        <div class="filter-section hidden" id="filterHousehold">
+          <div class="filter-title">&#128269; Filter Households</div>
+          <div class="field-group">
+            <label class="field-label">Grades (comma-separated)</label>
+            <input type="text" id="fSelectedGrades" placeholder="e.g. K, 1, 2, 3">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Class Section ID</label>
+            <input type="text" id="fSelectedClassSectionID" placeholder="Class section ID">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Bus Routes (comma-separated)</label>
+            <input type="text" id="fSelectedBuses" placeholder="e.g. Bus A, Bus B">
+          </div>
+        </div>
+ 
+        <div class="filter-section hidden" id="filterFaculty">
+          <div class="filter-title">&#128269; Filter Faculty</div>
+          <div class="field-group">
+            <label class="field-label">Department ID</label>
+            <input type="text" id="fSelectedDepartmentID" placeholder="Department ID">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Grades (comma-separated)</label>
+            <input type="text" id="fSelectedGradesFac" placeholder="e.g. K, 1, 2">
+          </div>
+        </div>
+ 
+        <div class="filter-section hidden" id="filterAccountGroup">
+          <div class="filter-title">&#128203; Account Group</div>
+          <div class="field-group">
+            <label class="field-label">Account Group ID</label>
+            <input type="text" id="fAccountGroupID" placeholder="Enter account group ID">
+          </div>
+        </div>
+ 
+        <div class="filter-section hidden" id="filterFreeform">
+          <div class="filter-title">&#128221; Freeform List</div>
+          <div class="field-group">
+            <label class="field-label">Freeform List ID</label>
+            <input type="text" id="fFreeformListID" placeholder="Enter freeform list ID">
+          </div>
+        </div>
+ 
+        <div class="filter-section hidden" id="filterSingleUser">
+          <div class="filter-title">&#128100; Single Recipient</div>
+          <div class="field-group">
+            <label class="field-label">Email Address</label>
+            <input type="email" id="fAdditionalEmail" placeholder="user@example.com">
+          </div>
+        </div>
+ 
+        <!-- Who to contact -->
+        <div class="field-group" id="contactOptions" style="display:none;">
+          <label class="field-label">Send To</label>
+          <div class="checkbox-row">
+            <label class="pill-check checked" onclick="togglePill(this)">
+              <input type="checkbox" id="chkPrimary" checked> Primary Contact
+            </label>
+            <label class="pill-check" onclick="togglePill(this)" id="pillSpouse">
+              <input type="checkbox" id="chkSpouse"> Spouse
+            </label>
+            <label class="pill-check" onclick="togglePill(this)" id="pillStudent">
+              <input type="checkbox" id="chkStudent"> Student Email
+            </label>
+            <label class="pill-check" onclick="togglePill(this)" id="pillAllContacts">
+              <input type="checkbox" id="chkAllContacts"> All In Household
+            </label>
+          </div>
+        </div>
+ 
+        <!-- Gender filter -->
+        <div class="field-group" id="genderFilter" style="display:none;">
+          <label class="field-label">Gender Filter</label>
+          <div class="checkbox-row">
+            <label class="pill-check checked" onclick="togglePill(this)">
+              <input type="checkbox" id="chkMale" checked> Male
+            </label>
+            <label class="pill-check checked" onclick="togglePill(this)">
+              <input type="checkbox" id="chkFemale" checked> Female
+            </label>
+          </div>
+        </div>
+      </div>
+ 
+      <div class="btn-row">
+        <div></div>
+        <button class="btn btn-primary" onclick="goToStep(2)">Next: Compose Email &#8594;</button>
+      </div>
+    </div>
+ 
+    <!-- ════════════════════════════════════════════════════ -->
+    <!--  STEP 2 : Compose Email                            -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="step-panel" id="panel2">
+      <div class="card">
+        <div class="card-title">Compose Your Email</div>
+        <div class="card-subtitle">Write your email. Use merge fields to personalize for each recipient.</div>
+ 
+        <div class="field-group">
+          <label class="field-label">From Address</label>
+          <input type="email" id="emailFrom" placeholder="noreply@yourschool.com">
+        </div>
+ 
+        <div class="field-group">
+          <label class="field-label">Subject</label>
+          <input type="text" id="emailSubject" placeholder="Enter email subject...">
+        </div>
+ 
+        <div class="field-group">
+          <label class="field-label">Merge Fields <span style="font-weight:400;color:#94a3b8;">(click to insert)</span></label>
+          <div class="merge-bar">
+            <button class="merge-btn" onclick="insertMerge('{FirstName}')">{FirstName}</button>
+            <button class="merge-btn" onclick="insertMerge('{LastName}')">{LastName}</button>
+            <button class="merge-btn" onclick="insertMerge('{EmailAddress}')">{EmailAddress}</button>
+            <button class="merge-btn" onclick="insertMerge('{insert_currentdate}')">{Date}</button>
+          </div>
+        </div>
+ 
+        <div class="field-group">
+          <label class="field-label">Email Body</label>
+          <textarea id="emailBody" placeholder="Type your email here...&#10;&#10;Dear {FirstName},&#10;&#10;..."></textarea>
+        </div>
+ 
+        <div class="field-group">
+          <label class="field-label">Options</label>
+          <div class="checkbox-row">
+            <label class="pill-check checked" onclick="togglePill(this)">
+              <input type="checkbox" id="chkHtml" checked> Send as HTML
+            </label>
+            <label class="pill-check" onclick="togglePill(this)">
+              <input type="checkbox" id="chkShowLogo"> Include Logo
+            </label>
+          </div>
+        </div>
+      </div>
+ 
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(1)">&#8592; Back</button>
+        <button class="btn btn-primary" onclick="goToStep(3)">Next: Review &#8594;</button>
+      </div>
+    </div>
+ 
+    <!-- ════════════════════════════════════════════════════ -->
+    <!--  STEP 3 : Review                                   -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="step-panel" id="panel3">
+      <div class="card">
+        <div class="card-title">Review Your Email</div>
+        <div class="card-subtitle">Double-check everything before creating recipients.</div>
+ 
+        <table class="review-table" id="reviewTable">
+          <tr><td>Group Type</td><td id="revGroupType">-</td></tr>
+          <tr><td>Filters</td><td id="revFilters">None</td></tr>
+          <tr><td>Send To</td><td id="revSendTo">-</td></tr>
+          <tr><td>From</td><td id="revFrom">-</td></tr>
+          <tr><td>Subject</td><td id="revSubject">-</td></tr>
+          <tr><td>Body Preview</td><td id="revBody" style="white-space:pre-wrap;max-height:120px;overflow-y:auto;display:block;">-</td></tr>
+          <tr><td>Format</td><td id="revFormat">-</td></tr>
+        </table>
+      </div>
+ 
+      <div class="card">
+        <div class="card-title" style="font-size:16px;">Save & Create Recipients</div>
+        <div class="card-subtitle">This will save the email group and generate the recipient list.</div>
+        <div id="recipientStatus" style="padding:8px 0;font-size:13px;color:#64748b;"></div>
+        <div class="btn-row" style="justify-content:flex-start;">
+          <button class="btn btn-primary" id="btnCreateRecipients" onclick="createRecipientsFlow()">
+            Create Recipients
+          </button>
+          <button class="btn btn-warning btn-sm hidden" id="btnRefreshRecipients" onclick="createRecipientsFlow()">
+            Refresh Recipients
+          </button>
+        </div>
+      </div>
+ 
+      <!-- Recipient stats (shown after creation) -->
+      <div id="recipientStatsCard" class="card hidden">
+        <div class="card-title" style="font-size:16px;">Recipient Summary</div>
+        <div class="stats-row" id="recipientStats"></div>
+      </div>
+ 
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(2)">&#8592; Back</button>
+        <button class="btn btn-success" id="btnGoSend" onclick="goToStep(4)" disabled>
+          Next: Send &#8594;
+        </button>
+      </div>
+    </div>
+ 
+    <!-- ════════════════════════════════════════════════════ -->
+    <!--  STEP 4 : Send                                     -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="step-panel" id="panel4">
+      <div class="card">
+        <div class="card-title">Send Your Email</div>
+        <div class="card-subtitle">Send a test first to make sure everything looks right, then send to all recipients.</div>
+ 
+        <!-- Stats -->
+        <div class="stats-row" id="sendStats"></div>
+ 
+        <!-- Progress bar -->
+        <div id="sendProgressWrap" class="hidden">
+          <div style="font-size:13px;font-weight:600;color:#475569;margin-bottom:4px;">Sending...</div>
+          <div class="progress-bar"><div class="progress-fill" id="sendProgress"></div></div>
+          <div style="font-size:12px;color:#94a3b8;" id="sendProgressText">0 of 0 sent</div>
+        </div>
+ 
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;">
+          <button class="btn btn-warning" id="btnSendTest" onclick="sendTestEmail()">
+            &#9993; Send Test Email
+          </button>
+          <button class="btn btn-success" id="btnSendAll" onclick="sendAllEmails()">
+            &#128640; Send To All Recipients
+          </button>
+          <button class="btn btn-danger btn-sm hidden" id="btnStop" onclick="requestStop()">
+            &#9724; Stop Sending
+          </button>
+        </div>
+ 
+        <div id="sendLog" style="margin-top:16px;max-height:150px;overflow-y:auto;font-size:12px;color:#64748b;"></div>
+      </div>
+ 
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goToStep(3)">&#8592; Back</button>
+        <div></div>
+      </div>
+    </div>
+ 
+  </div><!-- end wizard-body -->
+ 
+  <!-- Toast notification -->
+  <div class="toast" id="toast"></div>
+ 
+  <script src="js/IGServiceAPI.js"></script>
+  <script>
+    // ── Config ──
+    var SERVER = 'http://localhost:8010';
+    var USERID = 'yehuda.infoadmin';
+    var api = new IGServiceAPI(SERVER, { rowsPerPage: 200, startRow: 1 });
+ 
+    // ── State ──
+    var currentStep = 1;
+    var selectedGroupType = '';
+    var selectedGroupId = null;  // existing group EmailToGroupID
+    var recipientsCreated = false;
+    var totalRecipients = 0;
+ 
+    // ── Helpers ──
+    function getCookie(name) {
+      var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : '';
+    }
+ 
+    function getSid() {
+      return getCookie('msessionID');
+    }
+ 
+    function specProc(func, emailGroupId) {
+      var sid = getSid();
+      var path = 'webservice.jsp?wsrvsessionid=' + sid +
+        '&wsrvformat=json&action=display&pagename=specproc.jsp' +
+        '&func=' + func +
+        '&tran=Send Email To A Group' +
+        '&eid=EmailToGroupID|^;.IET.|^;' + emailGroupId;
+      return api.custom(path);
+    }
+ 
+    function showToast(msg, type) {
+      var t = document.getElementById('toast');
+      t.textContent = msg;
+      t.className = 'toast ' + (type || 'info') + ' show';
+      clearTimeout(t._timer);
+      t._timer = setTimeout(function() { t.classList.remove('show'); }, 4000);
+    }
+ 
+    function log(msg) {
+      var el = document.getElementById('sendLog');
+      var line = document.createElement('div');
+      var now = new Date();
+      line.textContent = '[' + now.toLocaleTimeString() + '] ' + msg;
+      el.prepend(line);
+    }
+ 
+    // ── Wizard Navigation ──
+    function goToStep(n) {
+      // Validate before advancing
+      if (n > currentStep) {
+        if (currentStep === 1 && !validateStep1()) return;
+        if (currentStep === 2 && !validateStep2()) return;
+        if (n === 4 && !recipientsCreated) {
+          showToast('Please create recipients first.', 'error');
+          return;
+        }
+      }
+ 
+      // Update review data when entering step 3
+      if (n === 3) buildReview();
+      if (n === 4) buildSendStats();
+ 
+      currentStep = n;
+ 
+      // Update panels
+      var panels = document.querySelectorAll('.step-panel');
+      for (var i = 0; i < panels.length; i++) {
+        panels[i].classList.toggle('active', i === n - 1);
+      }
+ 
+      // Update step indicators
+      var steps = document.querySelectorAll('.step');
+      for (var i = 0; i < steps.length; i++) {
+        steps[i].classList.remove('active', 'done');
+        if (i === n - 1) steps[i].classList.add('active');
+        else if (i < n - 1) steps[i].classList.add('done');
+      }
+ 
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+ 
+    function validateStep1() {
+      if (!selectedGroupId && !selectedGroupType) {
+        showToast('Please select a recipient group type.', 'error');
+        return false;
+      }
+      // Check required filters per group type
+      if (!selectedGroupId) {
+        if (selectedGroupType === 'Selected Households') {
+          if (!document.getElementById('fSelectedGrades').value &&
+              !document.getElementById('fSelectedClassSectionID').value &&
+              !document.getElementById('fSelectedBuses').value) {
+            showToast('Please enter at least one filter (grade, class, or bus).', 'error');
+            return false;
+          }
+        }
+        if (selectedGroupType === 'Selected Account Group' && !document.getElementById('fAccountGroupID').value) {
+          showToast('Please enter an Account Group ID.', 'error');
+          return false;
+        }
+        if (selectedGroupType === 'Freeform List' && !document.getElementById('fFreeformListID').value) {
+          showToast('Please enter a Freeform List ID.', 'error');
+          return false;
+        }
+        if (selectedGroupType === 'Single User' && !document.getElementById('fAdditionalEmail').value) {
+          showToast('Please enter the recipient email address.', 'error');
+          return false;
+        }
+      }
+      return true;
+    }
+ 
+    function validateStep2() {
+      if (!document.getElementById('emailFrom').value.trim()) {
+        showToast('Please enter a From address.', 'error');
+        return false;
+      }
+      if (!document.getElementById('emailSubject').value.trim()) {
+        showToast('Please enter a Subject.', 'error');
+        return false;
+      }
+      if (!document.getElementById('emailBody').value.trim()) {
+        showToast('Please enter the email body.', 'error');
+        return false;
+      }
+      return true;
+    }
+ 
+    // ── Group Type Selection ──
+    function selectGroupType(el) {
+      // Deselect existing group
+      selectedGroupId = null;
+      var items = document.querySelectorAll('.email-group-item');
+      for (var i = 0; i < items.length; i++) items[i].classList.remove('selected');
+ 
+      // Select new type
+      var cards = document.querySelectorAll('.group-type-card');
+      for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+      el.classList.add('selected');
+      selectedGroupType = el.getAttribute('data-type');
+      recipientsCreated = false;
+      document.getElementById('btnGoSend').disabled = true;
+ 
+      showFiltersForType(selectedGroupType);
+    }
+ 
+    function showFiltersForType(type) {
+      // Hide all filter sections
+      var sections = ['filterHousehold', 'filterFaculty', 'filterAccountGroup', 'filterFreeform', 'filterSingleUser'];
+      for (var i = 0; i < sections.length; i++) {
+        document.getElementById(sections[i]).classList.add('hidden');
+      }
+ 
+      // Show relevant filters
+      var householdTypes = ['Selected Households', 'All Parents', 'All Members', 'Class Section Parents',
+        'All Faculty And Parents', 'All Faculty And Parents And Students', 'All Parents And Students'];
+      var facultyTypes = ['Selected Current Faculty'];
+ 
+      if (householdTypes.indexOf(type) !== -1 && type === 'Selected Households') {
+        document.getElementById('filterHousehold').classList.remove('hidden');
+      }
+      if (facultyTypes.indexOf(type) !== -1) {
+        document.getElementById('filterFaculty').classList.remove('hidden');
+      }
+      if (type === 'Selected Account Group') {
+        document.getElementById('filterAccountGroup').classList.remove('hidden');
+      }
+      if (type === 'Freeform List') {
+        document.getElementById('filterFreeform').classList.remove('hidden');
+      }
+      if (type === 'Single User') {
+        document.getElementById('filterSingleUser').classList.remove('hidden');
+      }
+ 
+      // Show contact options
+      document.getElementById('contactOptions').style.display = type ? 'block' : 'none';
+      document.getElementById('genderFilter').style.display = type ? 'block' : 'none';
+ 
+      // Toggle contact checkboxes based on type
+      var householdSelections = ['Selected Households', 'Selected Account Group', 'Freeform List',
+        'Class Section Parents', 'All Members', 'All Parents',
+        'Selected Accounting Summary Households', 'All Faculty And Parents',
+        'All Faculty And Parents And Students', 'All Parents And Students'];
+      var studentSelections = ['Current Students', 'All Faculty And Students',
+        'All Faculty And Parents And Students', 'All Parents And Students'];
+ 
+      document.getElementById('pillSpouse').style.display =
+        householdSelections.indexOf(type) !== -1 ? '' : 'none';
+      document.getElementById('pillStudent').style.display =
+        studentSelections.indexOf(type) !== -1 ? '' : 'none';
+      document.getElementById('pillAllContacts').style.display =
+        householdSelections.indexOf(type) !== -1 ? '' : 'none';
+ 
+      if (type === 'Single User') {
+        document.getElementById('contactOptions').style.display = 'none';
+        document.getElementById('genderFilter').style.display = 'none';
+      }
+    }
+ 
+    function selectExistingGroup(el, groupId, groupType, subject) {
+      // Deselect type cards
+      var cards = document.querySelectorAll('.group-type-card');
+      for (var i = 0; i < cards.length; i++) cards[i].classList.remove('selected');
+ 
+      // Select this item
+      var items = document.querySelectorAll('.email-group-item');
+      for (var i = 0; i < items.length; i++) items[i].classList.remove('selected');
+      el.classList.add('selected');
+ 
+      selectedGroupId = groupId.replace(",","");
+      selectedGroupType = groupType || '';
+      recipientsCreated = false;
+      document.getElementById('btnGoSend').disabled = true;
+ 
+      showFiltersForType('');
+      document.getElementById('contactOptions').style.display = 'none';
+      document.getElementById('genderFilter').style.display = 'none';
+ 
+      // Pre-fill subject if available
+      if (subject) {
+        document.getElementById('emailSubject').value = subject;
+      }
+ 
+      showToast('Selected existing group #' + groupId, 'info');
+    }
+ 
+    // ── Pill checkbox toggle ──
+    function togglePill(el) {
+      var cb = el.querySelector('input[type="checkbox"]');
+      cb.checked = !cb.checked;
+      el.classList.toggle('checked', cb.checked);
+    }
+ 
+    // ── Merge field insert ──
+    function insertMerge(field) {
+      var ta = document.getElementById('emailBody');
+      var start = ta.selectionStart;
+      var end = ta.selectionEnd;
+      var text = ta.value;
+      ta.value = text.substring(0, start) + field + text.substring(end);
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = start + field.length;
+    }
+ 
+    // ── Build Review ──
+    function buildReview() {
+      document.getElementById('revGroupType').textContent =
+        selectedGroupId ? 'Existing Group #' + selectedGroupId + ' (' + selectedGroupType + ')' : selectedGroupType;
+ 
+      // Filters
+      var filters = [];
+      if (document.getElementById('fSelectedGrades').value) filters.push('Grades: ' + document.getElementById('fSelectedGrades').value);
+      if (document.getElementById('fSelectedClassSectionID').value) filters.push('Class: ' + document.getElementById('fSelectedClassSectionID').value);
+      if (document.getElementById('fSelectedBuses').value) filters.push('Bus: ' + document.getElementById('fSelectedBuses').value);
+      if (document.getElementById('fSelectedDepartmentID').value) filters.push('Dept: ' + document.getElementById('fSelectedDepartmentID').value);
+      if (document.getElementById('fAccountGroupID').value) filters.push('Account Group: ' + document.getElementById('fAccountGroupID').value);
+      if (document.getElementById('fFreeformListID').value) filters.push('List: ' + document.getElementById('fFreeformListID').value);
+      if (document.getElementById('fAdditionalEmail').value) filters.push('Email: ' + document.getElementById('fAdditionalEmail').value);
+      document.getElementById('revFilters').textContent = filters.length ? filters.join(', ') : 'None';
+ 
+      // Send to
+      var sendTo = [];
+      if (document.getElementById('chkPrimary').checked) sendTo.push('Primary');
+      if (document.getElementById('chkSpouse').checked) sendTo.push('Spouse');
+      if (document.getElementById('chkStudent').checked) sendTo.push('Student');
+      if (document.getElementById('chkAllContacts').checked) sendTo.push('All Contacts');
+      document.getElementById('revSendTo').textContent = sendTo.length ? sendTo.join(', ') : 'Primary';
+ 
+      document.getElementById('revFrom').textContent = document.getElementById('emailFrom').value || '-';
+      document.getElementById('revSubject').textContent = document.getElementById('emailSubject').value || '-';
+ 
+      var body = document.getElementById('emailBody').value || '-';
+      document.getElementById('revBody').textContent = body.length > 300 ? body.substring(0, 300) + '...' : body;
+ 
+      document.getElementById('revFormat').textContent =
+        (document.getElementById('chkHtml').checked ? 'HTML' : 'Plain Text') +
+        (document.getElementById('chkShowLogo').checked ? ' + Logo' : '');
+    }
+ 
+    // ── Create/Edit email group + Create Recipients ──
+    function createRecipientsFlow() {
+      var btn = document.getElementById('btnCreateRecipients');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Working...';
+      document.getElementById('recipientStatus').textContent = 'Saving email group...';
+ 
+      var data = {};
+      if (!selectedGroupId) {
+        // New group - set all fields
+        data['EmailGroupType'] = selectedGroupType;
+        data['Subject'] = document.getElementById('emailSubject').value;
+        data['EmailFromAddress'] = document.getElementById('emailFrom').value;
+        data['EmailBodyText'] = document.getElementById('emailBody').value;
+        data['EmailPrimary'] = document.getElementById('chkPrimary').checked ? 'T' : 'F';
+        data['EmailSpouse'] = document.getElementById('chkSpouse').checked ? 'T' : 'F';
+        data['EmailStudentSecondary'] = document.getElementById('chkStudent').checked ? 'T' : 'F';
+        data['EmailAllContactsInHousehold'] = document.getElementById('chkAllContacts').checked ? 'T' : 'F';
+ 
+        if (document.getElementById('chkHtml').checked) {
+          data['EmailBodyText_As_Html'] = document.getElementById('emailBody').value;
+        }
+        if (document.getElementById('chkShowLogo').checked) data['ShowLogo'] = 'T';
+ 
+        // Filters
+        if (document.getElementById('fSelectedGrades').value) data['SelectedGrades'] = document.getElementById('fSelectedGrades').value;
+        if (document.getElementById('fSelectedClassSectionID').value) data['SelectedClassSectionID'] = document.getElementById('fSelectedClassSectionID').value;
+        if (document.getElementById('fSelectedBuses').value) data['SelectedBuses'] = document.getElementById('fSelectedBuses').value;
+        if (document.getElementById('fSelectedDepartmentID').value) data['SelectedDepartmentID'] = document.getElementById('fSelectedDepartmentID').value;
+        if (document.getElementById('fAccountGroupID').value) data['AccountGroupID'] = document.getElementById('fAccountGroupID').value;
+        if (document.getElementById('fFreeformListID').value) data['FreeformListID'] = document.getElementById('fFreeformListID').value;
+        if (document.getElementById('fAdditionalEmail').value) data['AdditionalEmailAddresses'] = document.getElementById('fAdditionalEmail').value;
+ 
+        // Gender
+        var genderVal = '';
+        if (document.getElementById('chkMale').checked) genderVal += 'M';
+        if (document.getElementById('chkFemale').checked) genderVal += 'F';
+        if (genderVal && genderVal !== 'MF') data['Gender'] = genderVal;
+ 
+        data['AddToRecipients'] = 'T';
+      }
+ 
+      // If existing group, just run create recipients on it
+      if (selectedGroupId) {
+        document.getElementById('recipientStatus').textContent = 'Creating recipients...';
+        runCreateRecipients(selectedGroupId);
+        return;
+      }
+ 
+      // Create new email group record
+      api.create('Send Email To A Group', data)
+        .then(function(result) {
+          console.log('Create result:', result);
+          // Get the new group ID from response
+          var newId = null;
+          if (result.raw && result.raw.rsp && result.raw.rsp.eid) {
+            newId = result.raw.rsp.eid;
+          } else if (result.data && result.data.length > 0 && result.fieldSet) {
+            var fs = result.fieldSet;
+            if (fs['EmailToGroupID'] !== undefined) {
+              newId = result.data[0][fs['EmailToGroupID']];
+            }
+          }
+          if (!newId) {
+            // Try getting from raw rsp
+            newId = result.raw.rsp.EntityID || result.raw.rsp.eid;
+          }
+ 
+          if (!newId) {
+            throw new Error('Could not determine new EmailToGroupID from response.');
+          }
+ 
+          selectedGroupId = newId;
+          document.getElementById('recipientStatus').textContent = 'Email group #' + newId + ' created. Creating recipients...';
+          showToast('Email group created! ID: ' + newId, 'success');
+          return runCreateRecipients(newId);
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          btn.textContent = 'Create Recipients';
+          document.getElementById('recipientStatus').textContent = 'Error: ' + err.message;
+          showToast('Error: ' + err.message, 'error');
+          console.error(err);
+        });
+    }
+ 
+    function runCreateRecipients(groupId) {
+      return specProc('specDetailCreate_Recipients', groupId)
+        .then(function(result) {
+          console.log('Create recipients result:', result);
+          document.getElementById('recipientStatus').innerHTML =
+            '&#9989; Recipients created successfully.';
+ 
+          recipientsCreated = true;
+          document.getElementById('btnGoSend').disabled = false;
+          document.getElementById('btnCreateRecipients').disabled = false;
+          document.getElementById('btnCreateRecipients').textContent = 'Create Recipients';
+          document.getElementById('btnRefreshRecipients').classList.remove('hidden');
+ 
+          showToast('Recipients created!', 'success');
+          loadRecipientStats(groupId);
+        })
+        .catch(function(err) {
+          document.getElementById('recipientStatus').textContent = 'Error: ' + err.message;
+          document.getElementById('btnCreateRecipients').disabled = false;
+          document.getElementById('btnCreateRecipients').textContent = 'Create Recipients';
+          showToast('Error creating recipients: ' + err.message, 'error');
+          console.error(err);
+        });
+    }
+ 
+    function loadRecipientStats(groupId) {
+      // Fetch the email group view to get stats
+      api.view('Send Email To A Group', {
+        filter: [['EmailToGroupID', groupId, 'exact']]
+      }).then(function(result) {
+        if (result.data && result.data.length > 0) {
+          var row = result.data[0];
+          var fs = result.fieldSet;
+          var sent = 0, total = 0;
+ 
+          // Try to get count info
+          if (fs['Emails Sent'] !== undefined) sent = parseInt(row[fs['Emails Sent']]) || 0;
+          if (fs['EmailsSent'] !== undefined) sent = parseInt(row[fs['EmailsSent']]) || 0;
+ 
+          // Also try row count of recipients
+          api.view('Email Group Recipients', {
+            filter: [['EmailToGroupID', groupId, 'exact']],
+            rowsPerPage: 1
+          }).then(function(recResult) {
+            total = (recResult.raw && recResult.raw.rsp && recResult.raw.rsp.TotalRows)
+              ? parseInt(recResult.raw.rsp.TotalRows) : (recResult.data ? recResult.data.length : 0);
+            totalRecipients = total;
+            showRecipientStats(total, sent);
+          }).catch(function() {
+            showRecipientStats(0, 0);
+          });
+        }
+      }).catch(function(err) {
+        console.log('Could not load stats:', err);
+      });
+    }
+ 
+    function showRecipientStats(total, sent) {
+      totalRecipients = total;
+      var pending = total - sent;
+      var statsHtml =
+        '<div class="stat-card stat-total"><div class="stat-num">' + total + '</div><div class="stat-label">Total Recipients</div></div>' +
+        '<div class="stat-card stat-sent"><div class="stat-num">' + sent + '</div><div class="stat-label">Sent</div></div>' +
+        '<div class="stat-card stat-pending"><div class="stat-num">' + pending + '</div><div class="stat-label">Pending</div></div>';
+ 
+      document.getElementById('recipientStats').innerHTML = statsHtml;
+      document.getElementById('recipientStatsCard').classList.remove('hidden');
+    }
+ 
+    function buildSendStats() {
+      // Copy stats to send page
+      var statsEl = document.getElementById('recipientStats');
+      document.getElementById('sendStats').innerHTML = statsEl.innerHTML;
+    }
+ 
+    // ── Send Test Email ──
+    function sendTestEmail() {
+      if (!selectedGroupId) {
+        showToast('No email group selected.', 'error');
+        return;
+      }
+      var btn = document.getElementById('btnSendTest');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Sending test...';
+      log('Sending test email...');
+ 
+      specProc('specDetailSend_Test_Email', selectedGroupId)
+        .then(function(result) {
+          console.log('Test email result:', result);
+          btn.disabled = false;
+          btn.innerHTML = '&#9993; Send Test Email';
+          log('Test email sent successfully!');
+          showToast('Test email sent to your address!', 'success');
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '&#9993; Send Test Email';
+          log('Test email error: ' + err.message);
+          showToast('Error: ' + err.message, 'error');
+          console.error(err);
+        });
+    }
+ 
+    // ── Send All Emails ──
+    function sendAllEmails() {
+      if (!selectedGroupId) {
+        showToast('No email group selected.', 'error');
+        return;
+      }
+      if (!confirm('Are you sure you want to send emails to all ' + totalRecipients + ' recipients?')) return;
+ 
+      var btn = document.getElementById('btnSendAll');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Sending...';
+      document.getElementById('btnStop').classList.remove('hidden');
+      document.getElementById('sendProgressWrap').classList.remove('hidden');
+      log('Starting email send to all recipients...');
+ 
+      specProc('specDetailSend_Emails', selectedGroupId)
+        .then(function(result) {
+          console.log('Send all result:', result);
+          btn.disabled = false;
+          btn.innerHTML = '&#128640; Send To All Recipients';
+          document.getElementById('btnStop').classList.add('hidden');
+          document.getElementById('sendProgress').style.width = '100%';
+          document.getElementById('sendProgressText').textContent = 'Complete!';
+          log('All emails sent successfully!');
+          showToast('All emails sent!', 'success');
+          loadRecipientStats(selectedGroupId);
+        })
+        .catch(function(err) {
+          btn.disabled = false;
+          btn.innerHTML = '&#128640; Send To All Recipients';
+          document.getElementById('btnStop').classList.add('hidden');
+          log('Send error: ' + err.message);
+          showToast('Error: ' + err.message, 'error');
+          console.error(err);
+        });
+    }
+ 
+    // ── Request Stop ──
+    function requestStop() {
+      if (!selectedGroupId) return;
+      log('Requesting stop...');
+      specProc('specDetailRequest_Stop', selectedGroupId)
+        .then(function(result) {
+          log('Stop requested.');
+          showToast('Stop requested. Sending will halt soon.', 'info');
+          document.getElementById('btnStop').classList.add('hidden');
+        })
+        .catch(function(err) {
+          log('Stop request error: ' + err.message);
+          showToast('Error: ' + err.message, 'error');
+        });
+    }
+ 
+    // ── Load Existing Email Groups ──
+    function loadExistingGroups() {
+      var sid = getSid();
+      var path = 'webservice.jsp?wsrvsessionid=' + sid +
+        '&wsrvformat=json&wsrvfunc=&action=display&pagename=list.jsp' +
+        '&func=display&tran=Send Email To A Group&frow=1&rpp=50&silentfunc=true';
+ 
+      api.custom(path)
+        .then(function(result) {
+          var container = document.getElementById('existingGroups');
+          container.innerHTML = '';
+ 
+          if (!result.data || result.data.length === 0) {
+            container.innerHTML = '<div style="padding:12px;text-align:center;color:#94a3b8;font-size:13px;">No existing email groups found.</div>';
+            return;
+          }
+ 
+          var fs = result.fieldSet;
+          for (var i = 0; i < result.data.length; i++) {
+            var row = result.data[i];
+            var id = fs['EmailToGroupID'] !== undefined ? row[fs['EmailToGroupID']] : '';
+            var subj = fs['Subject'] !== undefined ? row[fs['Subject']] : '';
+            var type = fs['EmailGroupType'] !== undefined ? row[fs['EmailGroupType']] : '';
+            var sent = fs['EmailsSent'] !== undefined ? row[fs['EmailsSent']] : '';
+            var sentLabel = fs['Emails Sent'] !== undefined ? row[fs['Emails Sent']] : sent;
+ 
+            var item = document.createElement('div');
+            item.className = 'email-group-item';
+            item.innerHTML =
+              '<div><div class="egi-name">' + escapeHtml(subj || 'Untitled #' + id) + '</div>' +
+              '<div class="egi-meta">' + escapeHtml(type) + (sentLabel ? ' &middot; ' + sentLabel + ' sent' : '') + '</div></div>' +
+              '<div style="font-size:11px;color:#94a3b8;">#' + id + '</div>';
+            item.setAttribute('data-id', id);
+            item.setAttribute('data-type', type);
+            item.setAttribute('data-subject', subj);
+            (function(el, gid, gtype, gsubj) {
+              el.onclick = function() { selectExistingGroup(el, gid, gtype, gsubj); };
+            })(item, id, type, subj);
+            container.appendChild(item);
+          }
+        })
+        .catch(function(err) {
+          document.getElementById('existingGroups').innerHTML =
+            '<div style="padding:12px;text-align:center;color:#ef4444;font-size:13px;">Could not load groups: ' + escapeHtml(err.message) + '</div>';
+          console.error(err);
+        });
+    }
+ 
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+ 
+    // ── Init ──
+    (function init() {
+      var sid = getSid();
+      if (!sid) {
+        document.getElementById('userInfo').textContent = 'Not logged in';
+        showToast('No session found. Please login first.', 'error');
+      } else {
+        document.getElementById('userInfo').textContent = USERID + ' | Session active';
+        loadExistingGroups();
+      }
+    })();
+  </script>
+</body>
+</html>

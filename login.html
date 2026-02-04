@@ -52,15 +52,19 @@
       })
       .then(function(r) { return r.json(); })
       .then(function(data) {
+        console.log(data);
         if (data.rsp && data.rsp.stat === 'ok') {
           var sid = data.rsp.sessionid;
           // Set session cookie
+          console.log(sid);
+
           var expires = new Date(Date.now() + 240 * 60 * 1000).toUTCString();
           document.cookie = 'msessionID=' + sid + '; expires=' + expires + '; path=/';
           msg.textContent = 'Login OK! Redirecting...';
           msg.className = 'success';
+          //console.log(document.cookie);
           setTimeout(function() {
-            window.location.href = 'testmenu.html';
+            //window.location.href = 'testmenu.html';
           }, 500);
         } else {
           msg.textContent = data.rsp.errormsg || 'Login failed';
