@@ -32,7 +32,7 @@
     <div id="msg"></div>
   </div>
 
-  <script src="IGServiceAPI.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/YehudaFrankel/IGServiceAPI/IGServiceAPI.js"></script>
   <script>
     function doLogin() {
       var server = document.getElementById('server').value;
@@ -64,7 +64,7 @@
           msg.className = 'success';
           //console.log(document.cookie);
           setTimeout(function() {
-            //window.location.href = 'testmenu.html';
+            window.location.href = 'testmenu.html';
           }, 500);
         } else {
           msg.textContent = data.rsp.errormsg || 'Login failed';
