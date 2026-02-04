@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IG Service API - Example</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    pre  { background: #f4f4f4; padding: 12px; overflow-x: auto; }
+    button { padding: 8px 16px; margin: 4px; cursor: pointer; }
+    #output { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>IG Service API - Example</h2>
+
+  <div>
+    <label>Server: <input id="server" value="http://localhost:8010" size="30"></label>
+    <button onclick="initApi()">Connect</button>
+  </div>
+  <br>
+
+  <div>
+    <label>Transaction: <input id="tran" value="" size="30"></label>
+    <button onclick="doView()">View</button>
+    <button onclick="doRowCount()">Row Count</button>
+  </div>
+  <br>
+
+  <h3>Output</h3>
+  <pre id="output">Ready.</pre>
+
+  <!-- Include the API — one script tag, no jQuery needed -->
+  <script src="IGServiceAPI.js"></script>
+  <script>
+    var api;
+
+    function initApi() {
+      var server = document.getElementById('server').value;
+      api = new IGServiceAPI(server);
+      log('API ready: ' + server);
+    }
+
+    function log(msg) {
+      var out = document.getElementById('output');
+      if (typeof msg === 'object') msg = JSON.stringify(msg, null, 2);
+      out.textContent = msg;
+    }
+
+    function doView() {
+      if (!api) initApi();
+      var tran = document.getElementById('tran').value;
+      log('Loading ' + tran + '...');
+      api.view(tran, { rowsPerPage: 10, startRow: 1 })
+        .then(function(r) { log({ fieldSet: r.fieldSet, rows: r.data }); })
+        .catch(function(e) { log('Error: ' + e.message); });
+    }
+
+    function doRowCount() {
+      if (!api) initApi();
+      var tran = document.getElementById('tran').value;
+      log('Counting ' + tran + '...');
+      api.rowCount(tran)
+        .then(function(r) { log(r.data); })
+        .catch(function(e) { log('Error: ' + e.message); });
+    }
+
+    initApi();
+  </script>
+</body>
+</html>

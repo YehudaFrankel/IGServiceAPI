@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IGServiceAPI - Menu Test</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f0f2f5; }
+
+    header { background: linear-gradient(135deg, #1e3a5f, #2c5282); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { margin: 0; font-size: 18px; }
+    #userInfo { font-size: 11px; color: #bee3f8; }
+
+    #config { background: #fff; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    #config label { font-size: 12px; font-weight: 600; color: #475569; }
+    #config input { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; }
+    #config button { padding: 6px 14px; border: none; border-radius: 4px; background: #3b82f6; color: white; font-size: 13px; cursor: pointer; }
+    #config button:hover { background: #2563eb; }
+
+    #menuTabs { display: flex; gap: 5px; padding: 10px 20px 0; }
+    #menuTabs button { padding: 8px 18px; border: 1px solid #cbd5e1; border-bottom: none; border-radius: 6px 6px 0 0; background: #f8fafc; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer; }
+    #menuTabs button.active { background: #fff; border-bottom: 2px solid #fff; color: #1e40af; }
+
+    #searchContainer { margin: 10px 20px; position: relative; }
+    #searchContainer input { width: 100%; padding: 10px 40px 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+    #searchContainer input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 5px rgba(59,130,246,0.3); }
+    #searchClear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #3b82f6; border: none; border-radius: 50%; width: 24px; height: 24px; color: white; font-size: 16px; cursor: pointer; display: none; line-height: 24px; text-align: center; }
+    #searchClear.show { display: block; }
+
+    #infoMain { padding: 0 20px 20px; }
+
+    .category-title { background: linear-gradient(135deg, #93c5fd, #60a5fa); color: white; padding: 6px 12px; margin: 12px 0 6px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+
+    .transaction-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0; }
+    .transaction-btn { background: linear-gradient(135deg, #fff, #f8fafc); border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 6px; font-size: 12px; font-weight: 600; color: #475569; text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; min-height: 36px; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .transaction-btn:hover { background: linear-gradient(135deg, #f1f5f9, #e2e8f0); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.12); border-color: #60a5fa; }
+    .transaction-btn.hidden { display: none !important; }
+    .category-section.hidden { display: none; }
+
+    #status { padding: 10px 20px; font-size: 12px; color: #64748b; }
+    #noResults { text-align: center; padding: 20px; color: #666; font-style: italic; display: none; }
+
+    @media (max-width: 1200px) { .transaction-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 480px) { .transaction-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>IGServiceAPI - Menu Test</h1>
+    <div id="userInfo"></div>
+  </header>
+
+  <div id="config">
+    <label>Server:</label>
+    <input id="server" value="http://localhost:8010" size="30">
+    <label>UserID:</label>
+    <input id="userid" value="yehuda.infoadmin" size="20">
+    <button onclick="loadMenu()">Load Menu</button>
+    <button onclick="loadMenu('recent')">Recent</button>
+    <button onclick="loadMenu('common')">Common</button>
+    <button onclick="loadMenu('favorites')">Favorites</button>
+  </div>
+
+  <div id="status">Ready. Click "Load Menu" to test.</div>
+
+  <div id="searchContainer">
+    <input type="text" id="searchBox" placeholder="Search transactions...">
+    <button id="searchClear" onclick="clearSearch()">&times;</button>
+  </div>
+
+  <div id="infoMain"></div>
+  <div id="noResults">No transactions found.</div>
+
+  <script src="IGServiceAPI.js"></script>
+  <script>
+    var api;
+
+    function getCookie(name) {
+      var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? match[2] : '';
+    }
+
+    function loadMenu(type) {
+      var server = document.getElementById('server').value;
+      api = new IGServiceAPI(server, { rowsPerPage: 100, startRow: 1 });
+
+      var uid = document.getElementById('userid').value;
+      var sid = getCookie('msessionID');
+      console.log("sid="+sid);
+      var path = 'webservice.jsp?wsrvsessionid=' + sid + '&wsrvformat=json&wsrvfunc=tranmobilemenu&UserID=' + uid;
+      if (type) path += '&type=' + type;
+
+      document.getElementById('status').textContent = 'Loading ' + (type || 'main') + ' menu...';
+      document.getElementById('infoMain').innerHTML = '';
+      document.getElementById('noResults').style.display = 'none';
+
+      api.custom(path)
+        .then(function(result) {
+          var raw = result.raw;
+
+          // Show user info if available
+          if (raw.rsp && raw.rsp.Data && raw.rsp.Data.length > 0 && result.fieldSet) {
+            var d = raw.rsp.Data[0];
+            var fs = result.fieldSet;
+            var info = '';
+            if (fs['User ID'] !== undefined) info += d[fs['User ID']];
+            if (fs['User Type'] !== undefined) info += ' | ' + d[fs['User Type']];
+            if (fs['Organization Name'] !== undefined) info += ' at ' + d[fs['Organization Name']];
+            document.getElementById('userInfo').textContent = info;
+          }
+
+          // Render menu
+          if (raw.tran && raw.tran.AppTransactions) {
+            var tran = raw.tran.AppTransactions;
+            document.getElementById('status').textContent = 'Loaded ' + tran.length + ' transactions.';
+            renderMenu(tran);
+          } else {
+            document.getElementById('status').textContent = 'No transactions in response.';
+            document.getElementById('infoMain').innerHTML = '<p>No menu data returned. Check the server connection.</p>';
+          }
+        })
+        .catch(function(err) {
+          document.getElementById('status').textContent = 'Error: ' + err.message;
+          console.error(err);
+          if (err.response) console.log('Server response:', err.response);
+        });
+    }
+
+    function renderMenu(tran) {
+      var container = document.getElementById('infoMain');
+      container.innerHTML = '';
+
+      // Group by SubCategory
+      var categories = {};
+      for (var i = 0; i < tran.length; i++) {
+        var cat = tran[i]['SubCategory'] || 'Other';
+        var name = tran[i]['TransactionName'] || '';
+        var link = tran[i]['$LinkForList'] || '#';
+        link = link.replace('../mobile/', '');
+
+        if (name) {
+          if (!categories[cat]) categories[cat] = [];
+          categories[cat].push({ name: name, link: link });
+        }
+      }
+
+      // Render categories
+      for (var cat in categories) {
+        var section = document.createElement('div');
+        section.className = 'category-section';
+
+        var title = document.createElement('h3');
+        title.className = 'category-title';
+        title.textContent = cat;
+        section.appendChild(title);
+
+        var grid = document.createElement('div');
+        grid.className = 'transaction-grid';
+
+        for (var j = 0; j < categories[cat].length; j++) {
+          var t = categories[cat][j];
+          var btn = document.createElement('a');
+          btn.className = 'transaction-btn';
+          btn.textContent = t.name;
+          btn.href = t.link;
+          btn.onclick = function(e) {
+            e.preventDefault();
+            alert('Transaction: ' + this.textContent + '\nLink: ' + this.href);
+          };
+          grid.appendChild(btn);
+        }
+
+        section.appendChild(grid);
+        container.appendChild(section);
+      }
+    }
+
+    // Search
+    document.getElementById('searchBox').addEventListener('input', function() {
+      var term = this.value.toLowerCase().trim();
+      var clearBtn = document.getElementById('searchClear');
+      clearBtn.className = term.length > 0 ? 'show' : '';
+
+      var sections = document.querySelectorAll('.category-section');
+      var anyVisible = false;
+
+      if (!term) {
+        for (var i = 0; i < sections.length; i++) {
+          sections[i].classList.remove('hidden');
+          var btns = sections[i].querySelectorAll('.transaction-btn');
+          for (var j = 0; j < btns.length; j++) btns[j].classList.remove('hidden');
+        }
+        document.getElementById('noResults').style.display = 'none';
+        return;
+      }
+
+      for (var i = 0; i < sections.length; i++) {
+        var btns = sections[i].querySelectorAll('.transaction-btn');
+        var catVisible = false;
+        for (var j = 0; j < btns.length; j++) {
+          if (btns[j].textContent.toLowerCase().indexOf(term) !== -1) {
+            btns[j].classList.remove('hidden');
+            catVisible = true;
+            anyVisible = true;
+          } else {
+            btns[j].classList.add('hidden');
+          }
+        }
+        sections[i].classList.toggle('hidden', !catVisible);
+      }
+
+      document.getElementById('noResults').style.display = anyVisible ? 'none' : 'block';
+    });
+
+    function clearSearch() {
+      var box = document.getElementById('searchBox');
+      box.value = '';
+      box.dispatchEvent(new Event('input'));
+      box.focus();
+    }
+  </script>
+</body>
+</html>

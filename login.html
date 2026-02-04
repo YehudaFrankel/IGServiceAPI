@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IG Login</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .login-box { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); width: 320px; }
+    .login-box h2 { margin: 0 0 20px; text-align: center; color: #1e3a5f; }
+    .login-box label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .login-box input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 14px; box-sizing: border-box; margin-bottom: 12px; }
+    .login-box input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 5px rgba(59,130,246,0.3); }
+    .login-box button { width: 100%; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .login-box button:hover { background: #2563eb; }
+    #msg { text-align: center; font-size: 13px; margin-top: 10px; min-height: 20px; }
+    .error { color: #dc2626; }
+    .success { color: #16a34a; }
+  </style>
+</head>
+<body>
+
+  <div class="login-box">
+    <h2>Infograsp Login</h2>
+    <label>Server</label>
+    <input id="server" value="http://localhost:8010">
+    <label>Username</label>
+    <input id="user" value="yehuda.infoadmin">
+    <label>Password</label>
+    <input id="pass" type="password">
+    <button onclick="doLogin()">Login</button>
+    <div id="msg"></div>
+  </div>
+
+  <script src="IGServiceAPI.js"></script>
+  <script>
+    function doLogin() {
+      var server = document.getElementById('server').value;
+      var user = document.getElementById('user').value;
+      var pass = document.getElementById('pass').value;
+      var msg = document.getElementById('msg');
+
+      msg.textContent = 'Logging in...';
+      msg.className = '';
+
+      var url = server.replace(/\/+$/, '') + '/apps/webservice.jsp?wsrvformat=json&wsrvfunc=signin';
+
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: '&username=' + encodeURIComponent(user) + '&password=' + encodeURIComponent(pass)
+      })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.rsp && data.rsp.stat === 'ok') {
+          var sid = data.rsp.sessionid;
+          // Set session cookie
+          var expires = new Date(Date.now() + 240 * 60 * 1000).toUTCString();
+          document.cookie = 'msessionID=' + sid + '; expires=' + expires + '; path=/';
+          msg.textContent = 'Login OK! Redirecting...';
+          msg.className = 'success';
+          setTimeout(function() {
+            window.location.href = 'testmenu.html';
+          }, 500);
+        } else {
+          msg.textContent = data.rsp.errormsg || 'Login failed';
+          msg.className = 'error';
+        }
+      })
+      .catch(function(err) {
+        msg.textContent = 'Connection error: ' + err.message;
+        msg.className = 'error';
+      });
+    }
+
+    // Enter key submits
+    document.getElementById('pass').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') doLogin();
+    });
+  </script>
+</body>
+</html>

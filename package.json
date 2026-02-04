@@ -1,0 +1,11 @@
+{
+  "name": "ig-service-api",
+  "version": "1.0.0",
+  "description": "Standalone API client for Infograsp/IG webservice backend",
+  "main": "IGServiceAPI.js",
+  "scripts": {
+    "test": "echo \"No tests configured\""
+  },
+  "keywords": ["infograsp", "api", "client"],
+  "license": "ISC"
+}
